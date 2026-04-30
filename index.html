@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>강원도 여행 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;600&family=DM+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+:root {
+  --bg:#eef6fb; --surface:#fff; --surface2:#f4f9fd;
+  --border:#d8eaf5; --border2:#c0dced;
+  --text-1:#18384a; --text-2:#4a7a90; --text-3:#93bccb;
+  --d1:#4eadd4; --d1-bg:#e4f3fb; --d1-mid:#9fd3ec;
+  --d2:#5cb88a; --d2-bg:#e2f5ec; --d2-mid:#9ed9be;
+  --d3:#d47eaa; --d3-bg:#fce8f2; --d3-mid:#edaece;
+  --d4:#e09a5a; --d4-bg:#fdf0e4; --d4-mid:#f0c89a;
+  --meal:#d4607a; --act:#4eadd4; --stay:#e09a5a; --move:#93bccb;
+  --pink:#e8a0bc;
+  --radius:14px; --radius-sm:10px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{font-size:16px;}
+body{background:var(--bg);color:var(--text-1);font-family:'Noto Sans KR',sans-serif;min-height:100vh;padding-bottom:80px;}
+
+/* ── HEADER ── */
+.header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  padding:14px 18px 12px;
+  position:sticky;top:0;z-index:100;
+}
+.header-top{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.h-title{font-family:'Gowun Batang',serif;font-size:1.35rem;font-weight:700;color:var(--d1);display:flex;align-items:baseline;gap:7px;line-height:1;}
+.h-title span{color:var(--text-1);}
+.h-couple{font-size:.68rem;font-weight:400;color:var(--pink);font-family:'Noto Sans KR',sans-serif;letter-spacing:.03em;}
+.dday-badge{
+  flex-shrink:0;
+  background:linear-gradient(135deg,#fce8f2,#e4f3fb);
+  border:1px solid var(--d3-mid);
+  border-radius:20px;padding:4px 13px;
+  text-align:center;
+}
+.dday-num{font-family:'DM Mono',monospace;font-size:.95rem;font-weight:700;color:var(--d3);line-height:1;}
+.dday-lbl{font-size:.58rem;color:var(--text-3);margin-top:1px;}
+.dday-msg{font-size:.65rem;color:var(--d3);margin-top:4px;letter-spacing:.01em;line-height:1.4;}
+
+/* ── BOTTOM NAV ── */
+.bnav{
+  position:fixed;bottom:0;left:0;right:0;z-index:200;
+  background:var(--surface);border-top:1px solid var(--border);
+  display:flex;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.bnav-item{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:10px 4px 8px;cursor:pointer;transition:color .15s;
+  color:var(--text-3);font-size:.6rem;font-weight:500;gap:3px;
+  border:none;background:none;-webkit-tap-highlight-color:transparent;
+}
+.bnav-item.on{color:var(--d1);}
+.bnav-icon{font-size:1.2rem;line-height:1;}
+
+/* ── SECTION PAGES ── */
+.page{display:none;padding:16px;}
+.page.on{display:block;}
+
+/* ── CARDS ── */
+.card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px;overflow:hidden;}
+.card-hd{
+  display:flex;align-items:center;gap:10px;
+  padding:13px 15px 11px;border-bottom:1px solid var(--border);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;
+}
+.card-hd.no-border{border-bottom:none;}
+.day-badge{
+  width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:'DM Mono',monospace;font-size:.72rem;font-weight:700;flex-shrink:0;border:1.5px solid;
+}
+.b1{background:var(--d1-bg);color:var(--d1);border-color:var(--d1-mid);}
+.b2{background:var(--d2-bg);color:#2e9060;border-color:var(--d2-mid);}
+.b3{background:var(--d3-bg);color:#b84d84;border-color:var(--d3-mid);}
+.b4{background:var(--d4-bg);color:#c07030;border-color:var(--d4-mid);}
+.card-hd-info{flex:1;}
+.card-hd-title{font-size:.86rem;font-weight:600;color:var(--text-1);}
+.card-hd-sub{font-size:.68rem;color:var(--text-3);margin-top:2px;}
+.chevron{font-size:.9rem;color:var(--text-3);transition:transform .25s;}
+.chevron.open{transform:rotate(180deg);}
+
+.events-wrap{display:none;}
+.events-wrap.open{display:block;}
+
+/* ── EVENTS ── */
+.ev{display:flex;padding:0 12px 0 15px;transition:background .12s;-webkit-tap-highlight-color:transparent;}
+.ev:active{background:var(--surface2);}
+.ev.clickable{cursor:pointer;}
+.ev.clickable:active .ename{color:var(--d1);}
+.nb{
+  display:inline-flex;align-items:center;gap:2px;margin-left:5px;padding:1px 5px;
+  border-radius:8px;background:#e8f5e3;color:#1ec800;border:1px solid #b8e8a8;
+  font-size:.52rem;font-weight:700;vertical-align:middle;
+}
+.ev-t{width:38px;flex-shrink:0;padding-top:10px;font-family:'DM Mono',monospace;font-size:.58rem;color:var(--text-3);text-align:right;line-height:1;}
+.spine{width:24px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;}
+.dot{width:6px;height:6px;border-radius:50%;margin-top:12px;flex-shrink:0;}
+.vl{width:1.5px;flex:1;min-height:14px;background:var(--border2);}
+.ebody{flex:1;padding:8px 0 8px 5px;}
+.ecat{font-size:.57rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:2px;}
+.ename{font-size:.81rem;font-weight:500;color:var(--text-1);line-height:1.35;transition:color .15s;}
+.enote{font-size:.67rem;color:var(--text-3);margin-top:2px;}
+.memo-row{padding:6px 15px 10px 77px;}
+.memo-input{
+  width:100%;padding:7px 10px;border-radius:8px;border:1px solid var(--border2);
+  background:var(--surface2);font-size:.75rem;font-family:'Noto Sans KR',sans-serif;
+  color:var(--text-1);resize:none;outline:none;transition:border-color .15s;
+}
+.memo-input:focus{border-color:var(--d1);}
+
+.t-meal .dot{background:var(--meal);}.t-meal .ecat{color:var(--meal);}
+.t-act  .dot{background:var(--act);} .t-act  .ecat{color:var(--act);}
+.t-stay .dot{background:var(--stay);}.t-stay .ecat{color:var(--stay);}
+.t-move .dot{background:var(--move);}.t-move .ecat{color:var(--move);}
+.t-rest .dot{background:var(--border2);border:1.5px solid var(--border);}.t-rest .ecat{color:var(--text-3);}
+
+/* ── MAP PAGE ── */
+#map-page{padding:0;}
+.map-tab-bar{
+  display:flex;background:var(--surface);border-bottom:1px solid var(--border);
+  overflow-x:auto;scrollbar-width:none;padding:0 4px;
+}
+.map-tab-bar::-webkit-scrollbar{display:none;}
+.mtab{
+  flex-shrink:0;padding:11px 14px;font-size:.72rem;font-weight:500;
+  color:var(--text-3);cursor:pointer;border-bottom:2.5px solid transparent;
+  transition:all .2s;white-space:nowrap;-webkit-tap-highlight-color:transparent;
+}
+.mtab.on{color:var(--text-1);}
+.mtab.d0.on{border-color:#888;color:#555;}
+.mtab.d1.on{border-color:var(--d1);color:var(--d1);}
+.mtab.d2.on{border-color:#2e9060;color:#2e9060;}
+.mtab.d3.on{border-color:#b84d84;color:#b84d84;}
+.mtab.d4.on{border-color:#c07030;color:#c07030;}
+#leaflet-map{height:calc(100vw * 0.7);min-height:260px;max-height:380px;}
+.spot-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:12px;
+  max-height:38vh;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--border2) transparent;
+}
+.spot-card{
+  display:flex;align-items:center;gap:8px;padding:8px 10px;
+  border-radius:10px;background:var(--surface);border:1px solid var(--border);
+  cursor:pointer;-webkit-tap-highlight-color:transparent;transition:all .15s;
+}
+.spot-card:active{background:var(--d1-bg);border-color:var(--d1-mid);}
+.spot-num{
+  width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:.62rem;font-weight:700;color:#fff;flex-shrink:0;
+}
+.spot-name{font-size:.73rem;font-weight:600;color:var(--text-1);}
+.spot-cat{font-size:.6rem;color:var(--text-3);margin-top:1px;}
+
+/* ── WEATHER PAGE ── */
+.weather-header{display:flex;align-items:center;gap:8px;padding:0 0 14px;font-size:.72rem;color:var(--text-3);}
+.weather-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.w-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;}
+.w-day{font-size:.7rem;font-weight:700;color:var(--text-2);margin-bottom:2px;letter-spacing:.04em;}
+.w-region{font-size:.62rem;color:var(--text-3);margin-bottom:10px;}
+.w-icon{font-size:2rem;margin-bottom:8px;line-height:1;}
+.w-temp{font-size:1.1rem;font-weight:700;color:var(--text-1);}
+.w-desc{font-size:.68rem;color:var(--text-2);margin-top:2px;}
+.w-tip{font-size:.64rem;color:var(--d3);margin-top:6px;padding-top:6px;border-top:1px solid var(--border);line-height:1.4;}
+
+/* ── CHECKLIST PAGE ── */
+.cl-section{margin-bottom:16px;}
+.cl-section-title{
+  font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-3);margin-bottom:8px;padding-left:2px;
+}
+.cl-item{
+  display:flex;align-items:center;gap:11px;
+  padding:11px 14px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);margin-bottom:6px;cursor:pointer;
+  transition:all .15s;-webkit-tap-highlight-color:transparent;
+}
+.cl-item.done{background:var(--surface2);}
+.cl-check{
+  width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all .2s;
+}
+.cl-item.done .cl-check{background:var(--d2);border-color:var(--d2);}
+.cl-check-inner{color:#fff;font-size:.75rem;opacity:0;transition:opacity .15s;}
+.cl-item.done .cl-check-inner{opacity:1;}
+.cl-text{font-size:.82rem;color:var(--text-1);transition:color .15s;}
+.cl-item.done .cl-text{color:var(--text-3);text-decoration:line-through;}
+.cl-badge{margin-left:auto;font-size:.6rem;padding:2px 7px;border-radius:8px;font-weight:600;flex-shrink:0;}
+.cl-progress{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:14px;margin-bottom:16px;
+}
+.cl-progress-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+.cl-progress-lbl{font-size:.75rem;font-weight:600;color:var(--text-1);}
+.cl-progress-pct{font-family:'DM Mono',monospace;font-size:.8rem;color:var(--d2);font-weight:700;}
+.cl-bar-bg{height:6px;border-radius:3px;background:var(--border2);overflow:hidden;}
+.cl-bar-fill{height:100%;border-radius:3px;background:var(--d2);transition:width .4s ease;}
+
+/* ── LEAFLET POPUP ── */
+.leaflet-popup-content-wrapper{border-radius:12px;padding:0;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.15);}
+.leaflet-popup-content{margin:0;font-family:'Noto Sans KR',sans-serif;}
+.popup-inner{padding:10px 14px;}
+.popup-cat{font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;}
+.popup-name{font-size:.88rem;font-weight:600;color:#18384a;}
+.popup-time{font-size:.7rem;color:#93bccb;margin-top:2px;}
+.popup-naver{
+  display:block;padding:8px 14px;text-align:center;text-decoration:none;
+  font-size:.72rem;font-weight:600;color:#03c75a;
+  background:#f0fdf4;border-top:1px solid #d4f0df;
+}
+.pin-marker{
+  width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:#fff;border:2px solid rgba(255,255,255,.9);
+  box-shadow:0 2px 8px rgba(0,0,0,.25);font-family:'Noto Sans KR',sans-serif;
+}
+
+/* section label */
+.section-label{
+  font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-3);margin-bottom:10px;padding-left:2px;
+}
+
+/* ── DAY DIARY (메모 + 포토) ── */
+.day-diary{
+  border-top:1px solid var(--border);
+  padding:14px 15px 15px;
+  background:var(--surface2);
+}
+.diary-label{
+  font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-3);margin-bottom:10px;display:flex;align-items:center;gap:6px;
+}
+.diary-memo{
+  width:100%;padding:10px 12px;border-radius:10px;
+  border:1px solid var(--border2);background:var(--surface);
+  font-size:.8rem;font-family:'Noto Sans KR',sans-serif;
+  color:var(--text-1);resize:none;outline:none;
+  transition:border-color .15s;line-height:1.6;min-height:64px;
+}
+.diary-memo:focus{border-color:var(--d1);}
+.diary-photo-area{margin-top:10px;}
+.photo-upload-btn{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  width:100%;padding:10px;border-radius:10px;
+  border:1.5px dashed var(--border2);background:var(--surface);
+  color:var(--text-3);font-size:.78rem;cursor:pointer;
+  transition:all .18s;-webkit-tap-highlight-color:transparent;
+}
+.photo-upload-btn:active{background:var(--d1-bg);border-color:var(--d1-mid);color:var(--d1);}
+.photo-upload-btn input{display:none;}
+.photo-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;
+}
+.photo-thumb{
+  aspect-ratio:1;border-radius:8px;object-fit:cover;
+  width:100%;background:var(--border);cursor:pointer;
+  transition:opacity .15s;
+}
+.photo-thumb:active{opacity:.75;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="h-title">강원도 <span>여행</span><span class="h-couple">JS ♡ JW</span></div>
+    <div class="dday-badge">
+      <div class="dday-num" id="dday-num">D-?</div>
+      <div class="dday-lbl">출발까지</div>
+    </div>
+  </div>
+  <div class="dday-msg" id="dday-msg"></div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+  <button class="bnav-item on" onclick="showPage('schedule')" id="bn-schedule">
+    <div class="bnav-icon">📅</div><span>일정</span>
+  </button>
+  <button class="bnav-item" onclick="showPage('map')" id="bn-map">
+    <div class="bnav-icon">🗺️</div><span>지도</span>
+  </button>
+  <button class="bnav-item" onclick="showPage('weather')" id="bn-weather">
+    <div class="bnav-icon">🌤️</div><span>날씨</span>
+  </button>
+  <button class="bnav-item" onclick="showPage('checklist')" id="bn-checklist">
+    <div class="bnav-icon">🎒</div><span>준비물</span>
+  </button>
+</nav>
+
+<!-- ═══ PAGE: SCHEDULE ═══ -->
+<div class="page on" id="schedule-page">
+
+  <!-- DAY 1 -->
+  <div class="card">
+    <div class="card-hd" onclick="toggleDay(this)">
+      <div class="day-badge b1">01</div>
+      <div class="card-hd-info">
+        <div class="card-hd-title">5월 1일 · 평창 → 동해</div>
+        <div class="card-hd-sub">🚂 KTX 청량리 · 해안 드라이브</div>
+      </div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="events-wrap open">
+      <div class="ev t-move clickable" onclick="nv('청량리역','37.5800','127.0074')"><div class="ev-t">09:30</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">출발</div><div class="ename">청량리역<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-move clickable" onclick="nv('평창역','37.5644','128.3705')"><div class="ev-t">11:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">이동</div><div class="ename">평창역 차 탑승<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-meal clickable" onclick="nv('장평막국수','37.5492','128.4018')"><div class="ev-t">11:20</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">점심</div><div class="ename">장평막국수 🍜<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-act clickable" onclick="nv('대관령양떼목장','37.7289','128.7261')"><div class="ev-t">13:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">관광</div><div class="ename">대관령양떼목장 🐑<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-meal clickable" onclick="nv('베이커리카페 클램 동해','37.6018','129.1001')"><div class="ev-t">15:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">카페·간식</div><div class="ename">베이커리카페 클램 ☕🦪<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-act clickable" onclick="nv('대진수욕장 동해','37.6028','129.1020')"><div class="ev-t">15:30</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">액티비티</div><div class="ename">대진수욕장 🏖️<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-stay clickable" onclick="nv('동해 해오름 펜션','37.5892','129.1142')"><div class="ev-t">17:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">체크인</div><div class="ename">동해 해오름 펜션<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-meal clickable" onclick="nv('착한대게 동해','37.5247','129.1142')"><div class="ev-t">19:00</div><div class="spine"><div class="dot"></div></div><div class="ebody"><div class="ecat">저녁</div><div class="ename">착한대게 🦀<span class="nb">N지도</span></div></div></div>
+      <div class="day-diary">
+        <div class="diary-label">📝 Day 1 메모 &amp; 📷 사진</div>
+        <textarea class="diary-memo" placeholder="오늘 하루 기록해요 💕" oninput="saveMemo(this,'d1')" id="memo-d1"></textarea>
+        <div class="diary-photo-area">
+          <label class="photo-upload-btn"><span>📷</span><span>사진 추가</span><input type="file" accept="image/*" multiple onchange="addPhotos(this,'d1-photos')"></label>
+          <div class="photo-grid" id="d1-photos"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 2 -->
+  <div class="card">
+    <div class="card-hd" onclick="toggleDay(this)">
+      <div class="day-badge b2">02</div>
+      <div class="card-hd-info">
+        <div class="card-hd-title">5월 2일 · 정선</div>
+        <div class="card-hd-sub">🌿 수목원 · 계곡 · 바베큐</div>
+      </div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="events-wrap open">
+      <div class="ev t-meal clickable" onclick="nv('옥탑120 정선','37.3792','128.6608')"><div class="ev-t">11:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">점심</div><div class="ename">옥탑120<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-act clickable" onclick="nv('백두대간생태수목원','37.2860','128.7794')"><div class="ev-t">13:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">관광</div><div class="ename">백두대간생태수목원 🌲<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-act clickable" onclick="nv('하나로마트 정선','37.3798','128.6622')"><div class="ev-t">15:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">쇼핑</div><div class="ename">하나로마트 🛒<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-act clickable" onclick="nv('덕산기계곡 정선','37.2780','128.7820')"><div class="ev-t">16:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">액티비티</div><div class="ename">덕산기 계곡 💧<span class="nb">N지도</span></div><div class="enote">크록스 꼭 챙기기!</div></div></div>
+      <div class="ev t-stay clickable" onclick="nv('덕산기의아침 펜션 정선','37.2772','128.7831')"><div class="ev-t">17:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">체크인</div><div class="ename">덕산기의 아침 펜션<span class="nb">N지도</span></div><div class="enote">휴식 → 바베큐 🔥 → 산책</div></div></div>
+      <div class="day-diary">
+        <div class="diary-label">📝 Day 2 메모 &amp; 📷 사진</div>
+        <textarea class="diary-memo" placeholder="오늘 하루 기록해요 💕" oninput="saveMemo(this,'d2')" id="memo-d2"></textarea>
+        <div class="diary-photo-area">
+          <label class="photo-upload-btn"><span>📷</span><span>사진 추가</span><input type="file" accept="image/*" multiple onchange="addPhotos(this,'d2-photos')"></label>
+          <div class="photo-grid" id="d2-photos"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 3 -->
+  <div class="card">
+    <div class="card-hd" onclick="toggleDay(this)">
+      <div class="day-badge b3">03</div>
+      <div class="card-hd-info">
+        <div class="card-hd-title">5월 3일 · 영월</div>
+        <div class="card-hd-sub">🏯 장릉 · 청령포 · 강변</div>
+      </div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="events-wrap open">
+      <div class="ev t-meal"><div class="ev-t">09:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">아침</div><div class="ename">아침식사 ☀️</div></div></div>
+      <div class="ev t-move clickable" onclick="nv('이달엔영월 덕포점','37.1812','128.4612')"><div class="ev-t">10:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">이동</div><div class="ename">이달엔영월 덕포점<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-act clickable" onclick="nv('장릉 영월','37.1802','128.4607')"><div class="ev-t">11:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">역사</div><div class="ename">장릉 👑<span class="nb">N지도</span></div><div class="enote">단종 유적지</div></div></div>
+      <div class="ev t-meal clickable" onclick="nv('청솔식당 영월','37.1830','128.4640')"><div class="ev-t">12:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">점심</div><div class="ename">청솔식당<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-act clickable" onclick="nv('저류지수변공원 영월','37.1870','128.4590')"><div class="ev-t">13:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">관광</div><div class="ename">저류지수변공원 🌊<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-act clickable" onclick="nv('청령포','37.1844','128.4683')"><div class="ev-t">14:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">관광</div><div class="ename">청령포 ⛵<span class="nb">N지도</span></div><div class="enote">배 탑승 필요</div></div></div>
+      <div class="ev t-meal clickable" onclick="nv('육지고도느리게 영월','37.1822','128.4630')"><div class="ev-t">15:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">카페</div><div class="ename">육지고도 느리게 ☕<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-act clickable" onclick="nv('선돌 영월','37.2200','128.4520')"><div class="ev-t">16:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">관광 ①</div><div class="ename">선돌 🪨<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-act clickable" onclick="nv('문개실강변유원지 영월','37.2190','128.4510')"><div class="ev-t">16:30</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">관광 ②</div><div class="ename">문개실강변유원지 🌊<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-meal clickable" onclick="nv('영월동강한우','37.1835','128.4618')"><div class="ev-t">18:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">저녁</div><div class="ename">영월동강한우 🥩<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-stay clickable" onclick="nv('영월 유앤아이 펜션','37.1798','128.4655')"><div class="ev-t">20:00</div><div class="spine"><div class="dot"></div></div><div class="ebody"><div class="ecat">체크인</div><div class="ename">영월 유앤아이 펜션<span class="nb">N지도</span></div></div></div>
+      <div class="day-diary">
+        <div class="diary-label">📝 Day 3 메모 &amp; 📷 사진</div>
+        <textarea class="diary-memo" placeholder="오늘 하루 기록해요 💕" oninput="saveMemo(this,'d3')" id="memo-d3"></textarea>
+        <div class="diary-photo-area">
+          <label class="photo-upload-btn"><span>📷</span><span>사진 추가</span><input type="file" accept="image/*" multiple onchange="addPhotos(this,'d3-photos')"></label>
+          <div class="photo-grid" id="d3-photos"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY 4 -->
+  <div class="card">
+    <div class="card-hd" onclick="toggleDay(this)">
+      <div class="day-badge b4">04</div>
+      <div class="card-hd-info">
+        <div class="card-hd-title">5월 4일 · 영월 → 귀가</div>
+        <div class="card-hd-sub">🚂 한반도지형 · KTX 귀경</div>
+      </div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="events-wrap open">
+      <div class="ev t-meal"><div class="ev-t">09:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">아침</div><div class="ename">감자빵 🥖</div></div></div>
+      <div class="ev t-act clickable" onclick="nv('한반도지형 전망대 영월','37.2136','128.3458')"><div class="ev-t">11:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">관광</div><div class="ename">한반도지형 🗺️<span class="nb">N지도</span></div><div class="enote">영월 랜드마크</div></div></div>
+      <div class="ev t-meal clickable" onclick="nv('서강로803 영월','37.1902','128.3530')"><div class="ev-t">12:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">점심</div><div class="ename">서강로803<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-act clickable" onclick="nv('젊은달와이파크','37.1874','128.4588')"><div class="ev-t">14:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">관광</div><div class="ename">젊은달와이파크 🎡<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-move clickable" onclick="nv('평창역','37.5644','128.3705')"><div class="ev-t">16:00</div><div class="spine"><div class="dot"></div><div class="vl"></div></div><div class="ebody"><div class="ecat">이동</div><div class="ename">평창역으로 출발 🚗<span class="nb">N지도</span></div></div></div>
+      <div class="ev t-move"><div class="ev-t">17:30</div><div class="spine"><div class="dot"></div></div><div class="ebody"><div class="ecat">귀가</div><div class="ename">KTX 탑승 🚂</div></div></div>
+      <div class="day-diary">
+        <div class="diary-label">📝 Day 4 메모 &amp; 📷 사진</div>
+        <textarea class="diary-memo" placeholder="여행 마지막 날 기록해요 🥹💕" oninput="saveMemo(this,'d4')" id="memo-d4"></textarea>
+        <div class="diary-photo-area">
+          <label class="photo-upload-btn"><span>📷</span><span>사진 추가</span><input type="file" accept="image/*" multiple onchange="addPhotos(this,'d4-photos')"></label>
+          <div class="photo-grid" id="d4-photos"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /schedule-page -->
+
+<!-- ═══ PAGE: MAP ═══ -->
+<div class="page" id="map-page">
+  <div class="map-tab-bar">
+    <div class="mtab d0 on" onclick="goMap(0)">🗺 전체</div>
+    <div class="mtab d1" onclick="goMap(1)">5/1</div>
+    <div class="mtab d2" onclick="goMap(2)">5/2</div>
+    <div class="mtab d3" onclick="goMap(3)">5/3</div>
+    <div class="mtab d4" onclick="goMap(4)">5/4</div>
+  </div>
+  <div id="leaflet-map"></div>
+  <div class="spot-grid" id="spot-grid"></div>
+</div>
+
+<!-- ═══ PAGE: WEATHER ═══ -->
+<div class="page" id="weather-page">
+  <div class="section-label">5월 강원도 예상 날씨</div>
+  <div class="weather-grid">
+    <div class="w-card">
+      <div class="w-day">5/1 (금)</div>
+      <div class="w-region">평창 · 동해</div>
+      <div class="w-icon">⛅</div>
+      <div class="w-temp">11° / 21°</div>
+      <div class="w-desc">구름 조금, 맑음</div>
+      <div class="w-tip">🧥 가디건 필수 / 대관령 바람 강할 수 있어요</div>
+    </div>
+    <div class="w-card">
+      <div class="w-day">5/2 (토)</div>
+      <div class="w-region">정선</div>
+      <div class="w-icon">☀️</div>
+      <div class="w-temp">10° / 22°</div>
+      <div class="w-desc">맑음, 일교차 큼</div>
+      <div class="w-tip">👟 계곡 크록스 필수 / 저녁 쌀쌀할 수 있어요</div>
+    </div>
+    <div class="w-card">
+      <div class="w-day">5/3 (일)</div>
+      <div class="w-region">영월</div>
+      <div class="w-icon">🌤️</div>
+      <div class="w-temp">12° / 23°</div>
+      <div class="w-desc">대체로 맑음</div>
+      <div class="w-tip">⛵ 청령포 배 탑승 최적 날씨예요!</div>
+    </div>
+    <div class="w-card">
+      <div class="w-day">5/4 (월)</div>
+      <div class="w-region">영월</div>
+      <div class="w-icon">⛅</div>
+      <div class="w-temp">11° / 20°</div>
+      <div class="w-desc">구름 많음</div>
+      <div class="w-tip">🚂 귀경길 날씨 무난해요</div>
+    </div>
+  </div>
+  <div style="margin-top:14px;padding:12px 14px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);font-size:.7rem;color:var(--text-3);line-height:1.6;">
+    ⚠️ 날씨는 5월 강원도 평년 기후를 기반으로 한 예상값이에요. 출발 전 기상청 앱에서 꼭 확인해 주세요!
+  </div>
+</div>
+
+<!-- ═══ PAGE: CHECKLIST ═══ -->
+<div class="page" id="checklist-page">
+  <div class="cl-progress">
+    <div class="cl-progress-top">
+      <div class="cl-progress-lbl">준비 완료</div>
+      <div class="cl-progress-pct" id="cl-pct">0%</div>
+    </div>
+    <div class="cl-bar-bg"><div class="cl-bar-fill" id="cl-bar" style="width:0%"></div></div>
+  </div>
+
+  <!-- 💕 필수품 -->
+  <div class="cl-section">
+    <div class="cl-section-title" style="color:var(--d3);">💕 필수품</div>
+    <div class="cl-item" onclick="toggleCheck(this)" style="border-color:var(--d3-mid);background:var(--d3-bg);"><div class="cl-check" style="border-color:var(--d3-mid);"><div class="cl-check-inner">✓</div></div><div class="cl-text">지원이를 위한 사랑 💕</div><span class="cl-badge" style="background:var(--d3-bg);color:#b84d84;border:1px solid var(--d3-mid);">필수</span></div>
+    <div class="cl-item" onclick="toggleCheck(this)" style="border-color:var(--d3-mid);background:var(--d3-bg);"><div class="cl-check" style="border-color:var(--d3-mid);"><div class="cl-check-inner">✓</div></div><div class="cl-text">지원이가 좋아하는 간식 챙기기 🍫</div><span class="cl-badge" style="background:var(--d3-bg);color:#b84d84;border:1px solid var(--d3-mid);">필수</span></div>
+    <div class="cl-item" onclick="toggleCheck(this)" style="border-color:var(--d3-mid);background:var(--d3-bg);"><div class="cl-check" style="border-color:var(--d3-mid);"><div class="cl-check-inner">✓</div></div><div class="cl-text">커플 사진 찍을 장소 미리 찜해두기 📸</div><span class="cl-badge" style="background:var(--d3-bg);color:#b84d84;border:1px solid var(--d3-mid);">필수</span></div>
+    <div class="cl-item" onclick="toggleCheck(this)" style="border-color:var(--d3-mid);background:var(--d3-bg);"><div class="cl-check" style="border-color:var(--d3-mid);"><div class="cl-check-inner">✓</div></div><div class="cl-text">야경 명소에서 소원 빌기 🌠</div><span class="cl-badge" style="background:var(--d3-bg);color:#b84d84;border:1px solid var(--d3-mid);">필수</span></div>
+    <div class="cl-item" onclick="toggleCheck(this)" style="border-color:var(--d3-mid);background:var(--d3-bg);"><div class="cl-check" style="border-color:var(--d3-mid);"><div class="cl-check-inner">✓</div></div><div class="cl-text">손 잡고 걸을 산책 코스 미리 찾아두기 🤝</div><span class="cl-badge" style="background:var(--d3-bg);color:#b84d84;border:1px solid var(--d3-mid);">필수</span></div>
+  </div>
+
+  <!-- 👔 의류·신발 -->
+  <div class="cl-section">
+    <div class="cl-section-title">👔 의류·신발</div>
+    <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-check"><div class="cl-check-inner">✓</div></div><div class="cl-text">크록스</div><span class="cl-badge" style="background:#e4f3fb;color:var(--d1)">필수</span></div>
+    <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-check"><div class="cl-check-inner">✓</div></div><div class="cl-text">가디건 / 얇은 겉옷</div><span class="cl-badge" style="background:#e4f3fb;color:var(--d1)">필수</span></div>
+    <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-check"><div class="cl-check-inner">✓</div></div><div class="cl-text">운동화 / 트레킹화</div></div>
+    <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-check"><div class="cl-check-inner">✓</div></div><div class="cl-text">여벌 옷 (3박 4일)</div></div>
+  </div>
+
+  <!-- 🧴 세면·위생 -->
+  <div class="cl-section">
+    <div class="cl-section-title">🧴 세면·위생</div>
+    <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-check"><div class="cl-check-inner">✓</div></div><div class="cl-text">선크림</div><span class="cl-badge" style="background:#fce8f2;color:var(--d3)">중요</span></div>
+    <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-check"><div class="cl-check-inner">✓</div></div><div class="cl-text">세면도구 (칫솔·치약·샴푸)</div></div>
+    <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-check"><div class="cl-check-inner">✓</div></div><div class="cl-text">수건</div></div>
+  </div>
+
+  <!-- 📱 전자기기 -->
+  <div class="cl-section">
+    <div class="cl-section-title">📱 전자기기</div>
+    <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-check"><div class="cl-check-inner">✓</div></div><div class="cl-text">핸드폰 충전기</div><span class="cl-badge" style="background:#e4f3fb;color:var(--d1)">필수</span></div>
+  </div>
+
+  <!-- 💳 서류·기타 -->
+  <div class="cl-section">
+    <div class="cl-section-title">💳 서류·기타</div>
+    <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-check"><div class="cl-check-inner">✓</div></div><div class="cl-text">신분증 / 지갑</div><span class="cl-badge" style="background:#e4f3fb;color:var(--d1)">필수</span></div>
+    <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-check"><div class="cl-check-inner">✓</div></div><div class="cl-text">KTX 티켓 확인</div><span class="cl-badge" style="background:#e4f3fb;color:var(--d1)">필수</span></div>
+    <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-check"><div class="cl-check-inner">✓</div></div><div class="cl-text">우산 / 우비</div></div>
+    <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-check"><div class="cl-check-inner">✓</div></div><div class="cl-text">에코백 / 장바구니</div></div>
+    <div class="cl-item" onclick="toggleCheck(this)"><div class="cl-check"><div class="cl-check-inner">✓</div></div><div class="cl-text">바베큐 장갑 & 집게</div><span class="cl-badge" style="background:#fdf0e4;color:#c07030;">D2 필요</span></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ── D-DAY ── */
+const DEPART = new Date('2026-05-01T09:30:00');
+const MSGS = {
+  before: [
+    [30, '한 달 후면 강원도예요 🏔️'],
+    [14, '두 주 남았어요! 짐 미리 챙겨봐요 🎒'],
+    [7,  '일주일 뒤 출발! 설레지 않나요 💕'],
+    [3,  '사흘 뒤 출발이에요! 거의 다 왔어요 🎉'],
+    [2,  '이틀 남았어요! 크록스 챙겼죠? 👟'],
+    [1,  '내일 출발이에요! 오늘 밤 잘 자요 🌙'],
+    [0,  '오늘 바로 그날! 신나는 강원도 여행 시작 🚂'],
+  ],
+  d1: ['첫날부터 대관령 바람 맞으며 같이 달려요 🌬️💨'],
+  d2: ['계곡 물소리 들으며 바베큐~ 행복한 하루 🔥'],
+  d3: ['청령포에서 단둘이 특별한 하루 💙'],
+  d4: ['마지막 날까지 알차게! 곧 돌아오겠지만 아쉬워요 🥹'],
+  after: ['여행이 끝났지만 추억은 영원히 💕'],
+};
+
+function updateDday() {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const depart = new Date(2026, 4, 1); // 5월 1일 (월 0-indexed)
+  const diff = Math.round((depart - today) / 86400000);
+  const el = document.getElementById('dday-num');
+  const msg = document.getElementById('dday-msg');
+
+  let badge = '', msgTxt = '';
+  if (diff > 0) {
+    badge = `D-${diff}`;
+    const found = MSGS.before.find(([d]) => diff <= d);
+    msgTxt = found ? found[1] : `${diff}일 뒤 출발이에요! 기대돼요 💕`;
+  } else if (diff === 0) {
+    badge = 'D-Day!';
+    msgTxt = MSGS.d1[0];
+  } else if (diff === -1) {
+    badge = 'D+1'; msgTxt = MSGS.d2[0];
+  } else if (diff === -2) {
+    badge = 'D+2'; msgTxt = MSGS.d3[0];
+  } else if (diff === -3) {
+    badge = 'D+3'; msgTxt = MSGS.d4[0];
+  } else {
+    badge = `D+${Math.abs(diff)}`; msgTxt = MSGS.after[0];
+  }
+  el.textContent = badge;
+  msg.textContent = msgTxt;
+}
+updateDday();
+
+/* ── NAV ── */
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.bnav-item').forEach(b => b.classList.remove('on'));
+  document.getElementById(name + '-page').classList.add('on');
+  document.getElementById('bn-' + name).classList.add('on');
+  if (name === 'map' && !mapInit) initMap();
+}
+
+/* ── ACCORDION ── */
+function toggleDay(hd) {
+  const wrap = hd.nextElementSibling;
+  const chev = hd.querySelector('.chevron');
+  const open = wrap.classList.toggle('open');
+  chev.classList.toggle('open', open);
+}
+
+/* ── NAVER MAP ── */
+function nv(name, lat, lng) {
+  window.open(`https://map.naver.com/v5/search/${encodeURIComponent(name)}?c=${lng},${lat},15,0,0,0,dh`, '_blank');
+}
+
+/* ── MEMO ── */
+function saveMemo(el, key) {
+  try { localStorage.setItem('memo_' + key, el.value); } catch(e) {}
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+function loadMemos() {
+  ['d1','d2','d3','d4'].forEach(key => {
+    const el = document.getElementById('memo-' + key);
+    if (!el) return;
+    try {
+      const v = localStorage.getItem('memo_' + key);
+      if (v) { el.value = v; el.style.height = el.scrollHeight + 'px'; }
+    } catch(e) {}
+  });
+}
+loadMemos();
+
+/* ── PHOTO ── */
+function addPhotos(input, gridId) {
+  const grid = document.getElementById(gridId);
+  const files = Array.from(input.files);
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement('img');
+      img.className = 'photo-thumb';
+      img.src = e.target.result;
+      img.onclick = () => {
+        if (confirm('이 사진을 삭제할까요?')) img.remove();
+      };
+      grid.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+  input.value = '';
+}
+
+/* ── CHECKLIST ── */
+function toggleCheck(item) {
+  item.classList.toggle('done');
+  updateProgress();
+  saveChecks();
+}
+function updateProgress() {
+  const all = document.querySelectorAll('.cl-item').length;
+  const done = document.querySelectorAll('.cl-item.done').length;
+  const pct = Math.round(done / all * 100);
+  document.getElementById('cl-pct').textContent = pct + '%';
+  document.getElementById('cl-bar').style.width = pct + '%';
+}
+function saveChecks() {
+  const states = [...document.querySelectorAll('.cl-item')].map(i => i.classList.contains('done'));
+  try { localStorage.setItem('cl_states', JSON.stringify(states)); } catch(e) {}
+}
+function loadChecks() {
+  try {
+    const s = JSON.parse(localStorage.getItem('cl_states') || '[]');
+    document.querySelectorAll('.cl-item').forEach((item, i) => {
+      if (s[i]) item.classList.add('done');
+    });
+    updateProgress();
+  } catch(e) {}
+}
+loadChecks();
+
+/* ── MAP ── */
+const DAYS_DATA = {
+  1: { color:'#4eadd4', spots:[
+    {n:1,name:'청량리역',cat:'출발',time:'09:30',lat:37.5800,lng:127.0074},
+    {n:2,name:'평창역',cat:'이동',time:'11:00',lat:37.5644,lng:128.3705},
+    {n:3,name:'장평막국수',cat:'점심',time:'11:20',lat:37.5492,lng:128.4018},
+    {n:4,name:'대관령양떼목장',cat:'관광',time:'13:00',lat:37.7289,lng:128.7261},
+    {n:5,name:'베이커리카페 클램',cat:'카페',time:'15:00',lat:37.6018,lng:129.1001},
+    {n:6,name:'대진수욕장',cat:'액티비티',time:'15:30',lat:37.6028,lng:129.1020},
+    {n:7,name:'해오름 펜션',cat:'숙소',time:'17:00',lat:37.5892,lng:129.1142},
+    {n:8,name:'착한대게',cat:'저녁',time:'19:00',lat:37.5247,lng:129.1142},
+  ]},
+  2: { color:'#5cb88a', spots:[
+    {n:1,name:'옥탑120',cat:'점심',time:'11:00',lat:37.3792,lng:128.6608},
+    {n:2,name:'백두대간생태수목원',cat:'관광',time:'13:00',lat:37.2860,lng:128.7794},
+    {n:3,name:'하나로마트',cat:'쇼핑',time:'15:00',lat:37.3798,lng:128.6622},
+    {n:4,name:'덕산기 계곡',cat:'액티비티',time:'16:00',lat:37.2780,lng:128.7820},
+    {n:5,name:'덕산기의 아침 펜션',cat:'숙소',time:'17:00',lat:37.2772,lng:128.7831},
+  ]},
+  3: { color:'#d47eaa', spots:[
+    {n:1,name:'이달엔영월',cat:'이동',time:'10:00',lat:37.1812,lng:128.4612},
+    {n:2,name:'장릉',cat:'역사',time:'11:00',lat:37.1802,lng:128.4607},
+    {n:3,name:'청솔식당',cat:'점심',time:'12:00',lat:37.1830,lng:128.4640},
+    {n:4,name:'저류지수변공원',cat:'관광',time:'13:00',lat:37.1870,lng:128.4590},
+    {n:5,name:'청령포',cat:'관광',time:'14:00',lat:37.1844,lng:128.4683},
+    {n:6,name:'육지고도 느리게',cat:'카페',time:'15:00',lat:37.1822,lng:128.4630},
+    {n:7,name:'선돌',cat:'관광①',time:'16:00',lat:37.2200,lng:128.4520},
+    {n:8,name:'문개실강변유원지',cat:'관광②',time:'16:30',lat:37.2190,lng:128.4510},
+    {n:9,name:'영월동강한우',cat:'저녁',time:'18:00',lat:37.1835,lng:128.4618},
+    {n:10,name:'유앤아이 펜션',cat:'숙소',time:'20:00',lat:37.1798,lng:128.4655},
+  ]},
+  4: { color:'#e09a5a', spots:[
+    {n:1,name:'한반도지형',cat:'관광',time:'11:00',lat:37.2136,lng:128.3458},
+    {n:2,name:'서강로803',cat:'점심',time:'12:00',lat:37.1902,lng:128.3530},
+    {n:3,name:'젊은달와이파크',cat:'관광',time:'14:00',lat:37.1874,lng:128.4588},
+    {n:4,name:'평창역',cat:'귀가',time:'16:00',lat:37.5644,lng:128.3705},
+  ]},
+};
+
+let mapInit = false, leafMap, layerGrp;
+
+function initMap() {
+  leafMap = L.map('leaflet-map', {zoomControl:true});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+    attribution:'© OpenStreetMap © CARTO', subdomains:'abcd', maxZoom:19
+  }).addTo(leafMap);
+  layerGrp = L.layerGroup().addTo(leafMap);
+  mapInit = true;
+  goMap(0);
+}
+
+function goMap(dayNum) {
+  if (!mapInit) return;
+  document.querySelectorAll('.mtab').forEach((t,i) => t.classList.toggle('on', i === dayNum));
+  layerGrp.clearLayers();
+  const days = dayNum === 0 ? [1,2,3,4] : [dayNum];
+  let allCoords = [];
+  days.forEach(d => {
+    const day = DAYS_DATA[d];
+    const coords = day.spots.map(s => [s.lat, s.lng]);
+    allCoords = allCoords.concat(coords);
+    if (coords.length > 1)
+      L.polyline(coords, {color:day.color, weight: dayNum===0?2:3, opacity:dayNum===0?.5:.75, dashArray:'6,5'}).addTo(layerGrp);
+    day.spots.forEach(s => {
+      const icon = L.divIcon({
+        className:'',
+        html:`<div class="pin-marker" style="background:${day.color}">${s.n}</div>`,
+        iconSize:[28,28], iconAnchor:[14,14], popupAnchor:[0,-16]
+      });
+      L.marker([s.lat,s.lng],{icon}).addTo(layerGrp)
+        .bindPopup(`<div class="popup-inner"><div class="popup-cat" style="color:${day.color}">${s.cat}</div><div class="popup-name">${s.name}</div><div class="popup-time">Day${d} · ${s.time}</div></div><a class="popup-naver" href="https://map.naver.com/v5/search/${encodeURIComponent(s.name)}?c=${s.lng},${s.lat},15,0,0,0,dh" target="_blank">네이버 지도에서 보기 →</a>`, {maxWidth:200});
+    });
+  });
+  if (allCoords.length) leafMap.fitBounds(allCoords, {padding:[24,24]});
+
+  // spot grid
+  const grid = document.getElementById('spot-grid');
+  let html = '';
+  days.forEach(d => {
+    DAYS_DATA[d].spots.forEach(s => {
+      html += `<div class="spot-card" onclick="nv('${s.name}','${s.lat}','${s.lng}')">
+        <div class="spot-num" style="background:${DAYS_DATA[d].color}">${s.n}</div>
+        <div><div class="spot-name">${s.name}</div><div class="spot-cat">${s.cat} · ${s.time}</div></div>
+      </div>`;
+    });
+  });
+  grid.innerHTML = html;
+}
+</script>
+</body>
+</html>
